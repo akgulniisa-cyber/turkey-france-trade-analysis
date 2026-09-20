@@ -20,7 +20,14 @@ import sys
 import numpy as np
 import pandas as pd
 
-from config import DATASETS, PROCESSED_DIR, PROJECT_ROOT, RAW_DIR, YEARS
+from config import (
+    DATASETS,
+    NET_EXPORT_CONFIDENCE_THRESHOLD,
+    PROCESSED_DIR,
+    PROJECT_ROOT,
+    RAW_DIR,
+    YEARS,
+)
 from hs_chapters import chapters_frame
 
 logger = logging.getLogger("clean_data")
@@ -30,6 +37,7 @@ VALUE_COLUMNS = {
     "turkey_exports_to_france": "tr_to_france_usd",
     "turkey_exports_to_world": "tr_to_world_usd",
     "france_imports_from_world": "fr_from_world_usd",
+    "turkey_imports_from_world": "tr_from_world_usd",
 }
 
 
@@ -105,6 +113,19 @@ def build_panel() -> pd.DataFrame:
     panel["tr_export_weight_pct"] = safe_share(panel["tr_to_world_usd"], yearly_tr)
     panel["fr_import_weight_pct"] = safe_share(panel["fr_from_world_usd"], yearly_fr)
 
+    # Net-export ratio, between -1 (pure importer) and +1 (pure exporter).
+    # Gross exports overstate a country's real supply capacity whenever it
+    # imports the same goods it sells on: refined fuels made from imported
+    # crude, or gold bars passing through the Istanbul bullion market. This
+    # ratio separates those chapters from genuine production strengths.
+    total_trade = panel["tr_to_world_usd"] + panel["tr_from_world_usd"]
+    panel["tr_net_export_ratio"] = (
+        panel["tr_to_world_usd"] - panel["tr_from_world_usd"]
+    ) / total_trade.replace(0, np.nan)
+    panel["low_supply_confidence"] = (
+        panel["tr_net_export_ratio"] < NET_EXPORT_CONFIDENCE_THRESHOLD
+    )
+
     panel = panel.sort_values(["hs_code", "year"]).reset_index(drop=True)
     return panel
 
@@ -171,6 +192,23 @@ def report(panel: pd.DataFrame) -> None:
             f"{row['fr_from_world_usd'] / 1e9:>11.1f}B"
             f"{row['tr_share_in_france_pct']:>9.1f}%"
         )
+
+    print(f"\nRe-export / processing check, {latest}")
+    print("(net-export ratio: +1 = pure exporter, -1 = pure importer)")
+    print("-" * 78)
+    flagged = recent[recent["low_supply_confidence"]].nlargest(8, "tr_to_world_usd")
+    print(f"{'HS':>3}  {'Product':<32}{'TR exports':>12}{'TR imports':>12}{'Net ratio':>11}")
+    for _, row in flagged.iterrows():
+        print(
+            f"{row['hs_code']:>3}  {row['hs_short_name'][:31]:<32}"
+            f"{row['tr_to_world_usd'] / 1e9:>11.1f}B"
+            f"{row['tr_from_world_usd'] / 1e9:>11.1f}B"
+            f"{row['tr_net_export_ratio']:>11.2f}"
+        )
+    print(
+        f"\n{int(recent['low_supply_confidence'].sum())} of {len(recent)} chapters "
+        "flagged as net-importing"
+    )
 
     print(f"\nLargest French import markets where Turkiye is weakest, {latest}")
     print("(big French demand, Turkish share below 1%)")

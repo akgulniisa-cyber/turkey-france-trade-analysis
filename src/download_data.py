@@ -1,4 +1,4 @@
-"""Download the three UN Comtrade datasets used by the analysis.
+"""Download the UN Comtrade datasets used by the analysis.
 
 The script fetches, for every year in ``config.YEARS`` and at the 2-digit HS
 level:
@@ -6,6 +6,10 @@ level:
 1. Turkiye exports to France        -> data/raw/turkey_exports_to_france.csv
 2. Turkiye exports to the world     -> data/raw/turkey_exports_to_world.csv
 3. France imports from the world    -> data/raw/france_imports_from_world.csv
+4. Turkiye imports from the world   -> data/raw/turkey_imports_from_world.csv
+
+The fourth flow is used to detect chapters where Turkiye is mainly a
+re-exporter or a processor rather than a genuine supplier.
 
 Usage
 -----
@@ -251,7 +255,7 @@ def main() -> int:
         print("Re-run the script to retry only the missing years.")
         return 1
 
-    print("\nAll three datasets downloaded successfully.")
+    print(f"\nAll {len(DATASETS)} datasets downloaded successfully.")
     return 0
 
 

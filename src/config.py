@@ -84,7 +84,52 @@ DATASETS = {
         "filename": "france_imports_from_world.csv",
         "description": "France's imports from the whole world, by HS chapter",
     },
+    # Turkiye's own imports are not part of the opportunity story directly, but
+    # they reveal which chapters are dominated by re-export and processing
+    # rather than by domestic production. Gold (chapter 71) and refined fuels
+    # (chapter 27) are the textbook cases: large export figures that rest on
+    # equally large imports of the same goods.
+    "turkey_imports_from_world": {
+        "reporter": TURKIYE_CODE,
+        "partner": WORLD_CODE,
+        "flow": "M",
+        "filename": "turkey_imports_from_world.csv",
+        "description": "Turkiye's imports from the whole world, by HS chapter",
+    },
 }
+
+# --------------------------------------------------------------------------
+# Opportunity score
+# --------------------------------------------------------------------------
+# The opportunity of a chapter is the gap between what Turkiye could
+# realistically sell to France and what it sells today. The ceiling is the
+# smaller of two limits, because a trade flow cannot exceed either side of it:
+#
+#   demand ceiling = French market size  x  an attainable market share
+#   supply ceiling = Turkish capacity    x  an attainable redirection to France
+#
+# Taking the minimum is what stops the ranking being dominated by huge French
+# markets that Turkiye has no capacity to serve, such as pharmaceuticals.
+
+# The score is computed on the average of the last N years rather than on a
+# single year, so that one unusual year does not drive the ranking.
+SCORE_BASIS_YEARS = 3
+
+# Attainable market share, read off the distribution of the shares Turkiye
+# already holds in France. The 90th percentile is about 4%, which is what it
+# achieves in the chapters where it is well established.
+SATURATION_PERCENTILE = 0.90
+
+# Attainable redirection, read off the distribution of how much of Turkiye's
+# exports in a chapter already go to France. The 95th percentile is about 9%,
+# against an average of 3.9% across all goods, so it represents an ambitious
+# but observed level of integration rather than an arbitrary target.
+REDIRECT_PERCENTILE = 0.95
+
+# Chapters below this net-export ratio are reported with a warning. They are
+# not removed from the ranking, because the supply-quality discount already
+# reduces their score; the flag exists so the dashboard can mark them.
+NET_EXPORT_CONFIDENCE_THRESHOLD = -0.25
 
 # Columns kept from the raw Comtrade payload.  The API returns ~45 columns,
 # most of which are empty for aggregated 2-digit data.
