@@ -48,7 +48,7 @@ FRANCE_CODE = "251"
 WORLD_CODE = "0"
 
 # Years covered by the study.
-YEARS = [2020, 2021, 2022, 2023, 2024]
+YEARS = list(range(2015, 2025))
 
 # "AG2" asks Comtrade to aggregate the commodity dimension at the 2-digit
 # HS level, i.e. the 97 HS chapters.

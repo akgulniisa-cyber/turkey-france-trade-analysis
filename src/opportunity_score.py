@@ -99,19 +99,25 @@ def recent_average(panel: pd.DataFrame, n_years: int) -> pd.DataFrame:
 
     # Recompute the shares from the averaged values rather than averaging the
     # yearly shares, which would give small years the same weight as large ones.
-    averaged["tr_share_in_france_pct"] = (
-        averaged["tr_to_france_usd"] / averaged["fr_from_world_usd"].replace(0, np.nan)
-    ) * 100
-    averaged["france_share_of_tr_exports_pct"] = (
-        averaged["tr_to_france_usd"] / averaged["tr_to_world_usd"].replace(0, np.nan)
-    ) * 100
-    total_trade = averaged["tr_to_world_usd"] + averaged["tr_from_world_usd"]
-    averaged["tr_net_export_ratio"] = (
-        averaged["tr_to_world_usd"] - averaged["tr_from_world_usd"]
-    ) / total_trade.replace(0, np.nan)
-
+    averaged = derive_ratios(averaged)
     averaged["basis_years"] = ", ".join(str(year) for year in years)
     return averaged
+
+
+def derive_ratios(frame: pd.DataFrame) -> pd.DataFrame:
+    """Compute the share and net-export columns from the four value columns."""
+    frame = frame.copy()
+    frame["tr_share_in_france_pct"] = (
+        frame["tr_to_france_usd"] / frame["fr_from_world_usd"].replace(0, np.nan)
+    ) * 100
+    frame["france_share_of_tr_exports_pct"] = (
+        frame["tr_to_france_usd"] / frame["tr_to_world_usd"].replace(0, np.nan)
+    ) * 100
+    total_trade = frame["tr_to_world_usd"] + frame["tr_from_world_usd"]
+    frame["tr_net_export_ratio"] = (
+        frame["tr_to_world_usd"] - frame["tr_from_world_usd"]
+    ) / total_trade.replace(0, np.nan)
+    return frame
 
 
 def normalise_log(values: pd.Series) -> pd.Series:
@@ -128,8 +134,22 @@ def normalise_log(values: pd.Series) -> pd.Series:
     return (logged - logged.min()) / span * 100.0
 
 
-def compute_scores(frame: pd.DataFrame) -> pd.DataFrame:
-    """Estimate the realistic ceiling, the untapped value and the score."""
+def attainable_shares(frame: pd.DataFrame) -> tuple[float, float]:
+    """Read the attainable market share and redirection off the observed data."""
+    saturation_share = frame["tr_share_in_france_pct"].quantile(SATURATION_PERCENTILE)
+    redirect_share = frame["france_share_of_tr_exports_pct"].quantile(REDIRECT_PERCENTILE)
+    return saturation_share, redirect_share
+
+
+def compute_scores(
+    frame: pd.DataFrame, shares: tuple[float, float] | None = None
+) -> pd.DataFrame:
+    """Estimate the realistic ceiling, the untapped value and the score.
+
+    ``shares`` fixes the attainable market share and redirection. By default
+    they are read off ``frame`` itself; the forecast passes today's values so
+    that a projected ranking is judged against the same ceilings.
+    """
     scored = frame.copy()
 
     # --- supply quality -----------------------------------------------------
@@ -141,8 +161,7 @@ def compute_scores(frame: pd.DataFrame) -> pd.DataFrame:
     scored["effective_supply_usd"] = scored["tr_to_world_usd"] * scored["supply_quality"]
 
     # --- the two ceilings ---------------------------------------------------
-    saturation_share = scored["tr_share_in_france_pct"].quantile(SATURATION_PERCENTILE)
-    redirect_share = scored["france_share_of_tr_exports_pct"].quantile(REDIRECT_PERCENTILE)
+    saturation_share, redirect_share = shares or attainable_shares(scored)
     logger.info(
         "Attainable market share (p%d): %.2f%% of the French market",
         int(SATURATION_PERCENTILE * 100),

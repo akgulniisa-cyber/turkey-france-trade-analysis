@@ -3,7 +3,7 @@
 Which products could Turkish exporters realistically sell more of in France?
 
 This project answers that question from UN Comtrade data. It combines four
-trade flows at the 2-digit HS level (97 product chapters, 2020–2024), estimates
+trade flows at the 2-digit HS level (97 product chapters, 2015–2024), estimates
 a realistic ceiling on Turkish exports to France for each product, and ranks the
 chapters by the gap between that ceiling and what is actually sold today.
 
@@ -165,7 +165,9 @@ preview API, which needs no subscription key.
 The same four flows are also downloaded at 4-digit level for chapter 71 only,
 into `data/raw/chapter71_hs4.csv`.
 
-Each chapter file holds 97 HS chapters × 5 years. The totals match official statistics:
+Each chapter file holds 97 HS chapters × 10 years (2015–2024). The score uses
+the latest three; the longer history is there for forecasting. The totals match
+official statistics:
 Turkey's 2024 exports come to $261.8bn and its imports to $344.0bn.
 
 Two practical notes on the API, which cost some time to discover:
