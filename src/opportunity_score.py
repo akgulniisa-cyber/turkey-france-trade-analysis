@@ -283,6 +283,39 @@ def report(scored: pd.DataFrame, top: int) -> None:
         )
 
 
+def report_chapter71(years: list[int]) -> None:
+    """Show what chapter 71 is made of, and what the bullion exclusion removed."""
+    path = PROCESSED_DIR / "chapter71_groups.csv"
+    if not path.exists():
+        return
+    groups = pd.read_csv(path)
+    groups = groups[groups["year"].isin(years)]
+    averaged = groups.groupby(["group", "group_name", "excluded"], as_index=False)[
+        ["tr_to_world_usd", "tr_from_world_usd", "tr_to_france_usd", "fr_from_world_usd"]
+    ].mean()
+    total_trade = averaged["tr_to_world_usd"] + averaged["tr_from_world_usd"]
+    averaged["net_ratio"] = (
+        averaged["tr_to_world_usd"] - averaged["tr_from_world_usd"]
+    ) / total_trade.replace(0, np.nan)
+
+    print("\nChapter 71 by heading group (bullion is excluded from the score)")
+    print("-" * 104)
+    print(
+        f"{'Group':<30}{'TR exports':>12}{'TR imports':>12}{'Net ratio':>11}"
+        f"{'TR->FR':>9}{'FR imports':>12}  {'In score':>8}"
+    )
+    for _, row in averaged.sort_values("tr_to_world_usd", ascending=False).iterrows():
+        print(
+            f"{row['group_name']:<30}"
+            f"{row['tr_to_world_usd'] / 1e9:>11.2f}B"
+            f"{row['tr_from_world_usd'] / 1e9:>11.2f}B"
+            f"{row['net_ratio']:>11.2f}"
+            f"{row['tr_to_france_usd'] / 1e9:>8.2f}B"
+            f"{row['fr_from_world_usd'] / 1e9:>11.2f}B"
+            f"  {'no' if row['excluded'] else 'yes':>8}"
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Rank HS chapters by export opportunity.")
     parser.add_argument(
@@ -316,6 +349,7 @@ def main() -> int:
     logger.info("Saved %d scored chapters to %s", len(scored), output.relative_to(PROJECT_ROOT))
 
     report(scored, args.top)
+    report_chapter71([int(year) for year in scored["basis_years"].iloc[0].split(", ")])
     return 0
 
 

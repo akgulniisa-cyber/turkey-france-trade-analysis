@@ -65,8 +65,13 @@ def _throttle() -> None:
     _last_request_time = time.monotonic()
 
 
-def fetch_year(reporter: str, partner: str, flow: str, year: int) -> list[dict[str, Any]]:
+def fetch_year(
+    reporter: str, partner: str, flow: str, year: int, cmd_code: str = COMMODITY_LEVEL
+) -> list[dict[str, Any]]:
     """Fetch one (dataset, year) combination from the Comtrade preview endpoint.
+
+    ``cmd_code`` defaults to every 2-digit chapter; a comma-separated list of
+    4-digit headings can be passed instead for a drill-down.
 
     Returns the list of raw records. Raises RuntimeError if the API keeps
     returning an unusable payload after MAX_RETRIES attempts.
@@ -76,7 +81,7 @@ def fetch_year(reporter: str, partner: str, flow: str, year: int) -> list[dict[s
         "partnerCode": partner,
         "flowCode": flow,
         "period": str(year),
-        "cmdCode": COMMODITY_LEVEL,
+        "cmdCode": cmd_code,
         # The three filters below pin the secondary dimensions to their
         # aggregate value, otherwise Comtrade may return the same trade split
         # across several transport modes or customs procedures.

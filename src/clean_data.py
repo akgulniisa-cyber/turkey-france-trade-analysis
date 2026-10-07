@@ -5,7 +5,11 @@ into one tidy table with a single row per (HS chapter, year), attaches English
 product names, derives the share variables the opportunity score needs, and
 runs a set of data-quality checks.
 
+Chapter 71 is then replaced by its 4-digit breakdown without the bullion
+headings, when that breakdown has been downloaded.
+
 Output: data/processed/trade_panel.csv
+        data/processed/chapter71_groups.csv
 
 Usage
 -----
@@ -21,7 +25,12 @@ import numpy as np
 import pandas as pd
 
 from config import (
+    CHAPTER71_EXCLUDED_GROUPS,
+    CHAPTER71_GROUP_NAMES,
+    CHAPTER71_HEADINGS,
     DATASETS,
+    DRILLDOWN_CHAPTER,
+    DRILLDOWN_FILENAME,
     NET_EXPORT_CONFIDENCE_THRESHOLD,
     PROCESSED_DIR,
     PROJECT_ROOT,
@@ -76,8 +85,72 @@ def safe_share(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
     return (numerator / denominator) * 100.0
 
 
-def build_panel() -> pd.DataFrame:
-    """Merge the three flows, add product names and derive share variables."""
+def load_chapter71_groups() -> pd.DataFrame | None:
+    """Load the 4-digit chapter 71 file and sum it by heading group and year.
+
+    Returns None when the drill-down has not been downloaded, in which case the
+    panel keeps the 2-digit figure for chapter 71.
+    """
+    path = RAW_DIR / DRILLDOWN_FILENAME
+    if not path.exists():
+        logger.warning(
+            "   %s is missing, chapter 71 keeps its bullion. "
+            "Run 'python src/download_chapter71.py' to fix this.",
+            path.name,
+        )
+        return None
+
+    frame = pd.read_csv(path, dtype={"cmdCode": str})
+    unknown = set(frame["cmdCode"]) - set(CHAPTER71_HEADINGS)
+    if unknown:
+        raise ValueError(f"{path.name} contains unexpected headings: {sorted(unknown)}")
+
+    frame["group"] = frame["cmdCode"].map(lambda code: CHAPTER71_HEADINGS[code][1])
+    groups = frame.pivot_table(
+        index=["group", "refYear"], columns="dataset", values="primaryValue", aggfunc="sum"
+    )
+    # A heading missing from a flow means no trade was reported, i.e. zero.
+    groups = groups.rename(columns=VALUE_COLUMNS).fillna(0.0).reset_index()
+    groups = groups.rename(columns={"refYear": "year"})
+    groups.columns.name = None
+    groups.insert(1, "group_name", groups["group"].map(CHAPTER71_GROUP_NAMES))
+    groups["excluded"] = groups["group"].isin(CHAPTER71_EXCLUDED_GROUPS)
+    return groups
+
+
+def exclude_bullion(panel: pd.DataFrame, groups: pd.DataFrame) -> pd.DataFrame:
+    """Replace chapter 71's values by the sum of its non-bullion headings."""
+    kept = groups[~groups["excluded"]].groupby("year")[list(VALUE_COLUMNS.values())].sum()
+
+    rows = (panel["hs_code"] == DRILLDOWN_CHAPTER) & panel["year"].isin(kept.index)
+    missing_years = set(panel.loc[panel["hs_code"] == DRILLDOWN_CHAPTER, "year"]) - set(kept.index)
+    if missing_years:
+        logger.warning("   chapter 71 drill-down lacks years %s", sorted(missing_years))
+
+    before = panel.loc[rows, "tr_to_world_usd"].sum()
+    for column in VALUE_COLUMNS.values():
+        panel.loc[rows, column] = panel.loc[rows, "year"].map(kept[column]).to_numpy()
+    after = panel.loc[rows, "tr_to_world_usd"].sum()
+    logger.info(
+        "   chapter 71 without bullion: Turkish exports %.1fB -> %.1fB over %d years",
+        before / 1e9,
+        after / 1e9,
+        rows.sum(),
+    )
+
+    panel.loc[rows, "hs_short_name"] = "Jewellery and precious stones"
+    panel.loc[rows, "hs_name"] = (
+        panel.loc[rows, "hs_name"] + " - excluding bullion, coin and scrap"
+    )
+    panel["bullion_excluded"] = rows
+    return panel
+
+
+def build_panel() -> tuple[pd.DataFrame, pd.DataFrame | None]:
+    """Merge the four flows, add product names and derive share variables.
+
+    Returns the panel and, when available, the chapter 71 group table.
+    """
     logger.info("Loading raw files:")
     panel = None
     for key in VALUE_COLUMNS:
@@ -95,6 +168,13 @@ def build_panel() -> pd.DataFrame:
     unknown = panel[panel["hs_name"].isna()]["hs_code"].unique()
     if len(unknown):
         logger.warning("   %d HS codes have no English name: %s", len(unknown), list(unknown))
+
+    logger.info("Taking bullion out of chapter 71")
+    groups = load_chapter71_groups()
+    if groups is not None:
+        panel = exclude_bullion(panel, groups)
+    else:
+        panel["bullion_excluded"] = False
 
     logger.info("Deriving share variables")
     # How much of the French market Turkiye already holds in this chapter.
@@ -127,7 +207,7 @@ def build_panel() -> pd.DataFrame:
     )
 
     panel = panel.sort_values(["hs_code", "year"]).reset_index(drop=True)
-    return panel
+    return panel, groups
 
 
 def validate(panel: pd.DataFrame) -> list[str]:
@@ -234,8 +314,8 @@ def main() -> int:
     )
 
     try:
-        panel = build_panel()
-    except FileNotFoundError as exc:
+        panel, groups = build_panel()
+    except (FileNotFoundError, ValueError) as exc:
         logger.error(str(exc))
         return 1
 
@@ -251,6 +331,11 @@ def main() -> int:
     output = PROCESSED_DIR / "trade_panel.csv"
     panel.to_csv(output, index=False)
     logger.info("Saved panel to %s", output.relative_to(PROJECT_ROOT))
+
+    if groups is not None:
+        groups_output = PROCESSED_DIR / "chapter71_groups.csv"
+        groups.to_csv(groups_output, index=False)
+        logger.info("Saved chapter 71 groups to %s", groups_output.relative_to(PROJECT_ROOT))
 
     # Read the file back and compare null counts. Some perfectly ordinary
     # strings (for example "NA") are treated as missing values when pandas

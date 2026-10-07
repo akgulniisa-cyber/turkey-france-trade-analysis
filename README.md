@@ -7,9 +7,9 @@ trade flows at the 2-digit HS level (97 product chapters, 2020–2024), estimate
 a realistic ceiling on Turkish exports to France for each product, and ranks the
 chapters by the gap between that ceiling and what is actually sold today.
 
-**Headline result so far:** about **$3.3 billion per year** of untapped export
+**Headline result so far:** about **$3.4 billion per year** of untapped export
 value, against $10.1 billion of trade that already exists. Just over half of it
-sits in ten product chapters.
+sits in ten product chapters, led by jewellery.
 
 ---
 
@@ -52,8 +52,9 @@ strong but has already reached its ceiling in France.
 
 Gross export figures overstate what a country can really supply whenever it
 imports the same goods it sells on. Two chapters are affected badly: gold
-(chapter 71) is largely bullion passing through the Istanbul market, and mineral
-fuels (chapter 27) are refined product made from imported crude.
+bullion passing through the Istanbul market (chapter 71, handled separately
+below), and mineral fuels (chapter 27), which are refined product made from
+imported crude.
 
 Rather than hardcoding a list of suspect products, the model downloads Turkey's
 own imports as a fourth dataset and derives a quality factor from the net-export
@@ -63,12 +64,15 @@ really re-export or processing:
 | Chapter | Gross exports | Quality factor | Effective supply |
 |---|---:|---:|---:|
 | 27 Mineral fuels | $16.5B | 0.18 | $2.9B |
-| 71 Precious stones and metals | $12.3B | 0.31 | $3.8B |
+| 71 Jewellery and precious stones¹ | $8.7B | 0.70 | $6.1B |
 | 84 Machinery | $24.5B | 0.39 | $9.5B |
 | 61 Knitted apparel | $10.5B | 0.89 | $9.3B |
 
-Genuine manufacturing strengths keep nearly all their value; commodity and
-bullion flows lose most of theirs.
+Genuine manufacturing strengths keep nearly all their value; commodity flows
+lose most of theirs.
+
+¹ After the bullion headings are removed. With bullion included the chapter
+showed $12.3B of exports and a quality factor of only 0.31.
 
 ### Sanity checks
 
@@ -91,16 +95,16 @@ Top chapters by untapped annual value, averaged over 2022–2024:
 
 | # | HS | Product | Score | Untapped | Current | Binding limit | RCA |
 |---|---|---|---:|---:|---:|---|---:|
-| 1 | 71 | Precious stones and metals ⚠ | 100.0 | $0.32B | $0.04B | supply | 1.58 |
-| 2 | 72 | Iron and steel ⚠ | 81.4 | $0.26B | $0.07B | supply | 1.40 |
-| 3 | 73 | Articles of iron or steel | 66.2 | $0.21B | $0.36B | demand | 3.04 |
-| 4 | 19 | Cereal and bakery preparations | 63.2 | $0.20B | $0.01B | demand | 2.70 |
-| 5 | 62 | Non-knitted apparel | 56.5 | $0.18B | $0.34B | demand | 3.02 |
-| 6 | 94 | Furniture and lighting | 48.8 | $0.15B | $0.25B | supply | 1.97 |
-| 7 | 15 | Fats and oils | 40.7 | $0.13B | $0.01B | supply | 2.35 |
-| 8 | 07 | Vegetables | 39.1 | $0.12B | $0.03B | supply | 2.14 |
-| 9 | 20 | Prepared vegetables and fruit | 38.1 | $0.12B | $0.09B | demand | 3.49 |
-| 10 | 89 | Ships and boats | 37.9 | $0.12B | $0.02B | supply | 1.66 |
+| 1 | 71 | Jewellery and precious stones | 100.0 | $0.41B | $0.04B | demand | 3.20 |
+| 2 | 72 | Iron and steel ⚠ | 63.7 | $0.26B | $0.07B | supply | 1.37 |
+| 3 | 73 | Articles of iron or steel | 51.8 | $0.21B | $0.36B | demand | 2.98 |
+| 4 | 19 | Cereal and bakery preparations | 49.5 | $0.20B | $0.01B | demand | 2.64 |
+| 5 | 62 | Non-knitted apparel | 44.3 | $0.18B | $0.34B | demand | 2.96 |
+| 6 | 94 | Furniture and lighting | 38.2 | $0.15B | $0.25B | supply | 1.93 |
+| 7 | 15 | Fats and oils | 31.8 | $0.13B | $0.01B | supply | 2.30 |
+| 8 | 07 | Vegetables | 30.6 | $0.12B | $0.03B | supply | 2.09 |
+| 9 | 20 | Prepared vegetables and fruit | 29.8 | $0.12B | $0.09B | demand | 3.42 |
+| 10 | 89 | Ships and boats | 29.7 | $0.12B | $0.02B | supply | 1.62 |
 
 `RCA` is revealed comparative advantage: above 1 means Turkey is more
 specialised in the product than the structure of French demand would predict.
@@ -111,15 +115,38 @@ confirmation of the ranking.
 market is the limit and Turkey has spare capacity; "supply" means Turkey would
 have to produce more to go further.
 
-### Known limitation
+⚠ marks chapters where Turkey imports more than it exports, so part of the
+export figure is re-export or processing. These carry a `low_supply_confidence`
+column in the output.
 
-Chapter 71 still ranks first and is flagged ⚠. At 2-digit level the chapter
-mixes gold bullion (HS 7108) with jewellery (HS 7113), and Turkey is a genuine
-jewellery manufacturer, so the figure is part real opportunity and part
-financial flow. The net-export discount reduces it but cannot separate the two.
-Resolving this properly needs a 4-digit drill-down on chapter 71, which is
-planned. Chapters flagged this way carry a `low_supply_confidence` column in the
-output.
+### Chapter 71: jewellery, not gold
+
+At 2-digit level chapter 71 mixes gold bullion (HS 7108) with jewellery
+(HS 7113). An earlier version ranked the chapter first with a ⚠ flag, and it
+was impossible to say how much of that was a real product opportunity and how
+much a financial flow. The project therefore downloads the 18 headings of the
+chapter separately and removes bullion, coin and scrap before scoring.
+
+Averages for 2022–2024:
+
+| Group | Turkish exports | Turkish imports | Net ratio | French imports | In score |
+|---|---:|---:|---:|---:|---|
+| Jewellery and articles (7113–7117) | $8.69B | $3.63B | +0.41 | $9.50B | yes |
+| Bullion, coin and scrap (7106–7112, 7118) | $3.58B | $23.60B | −0.74 | $3.36B | no |
+| Pearls and precious stones (7101–7105) | $0.03B | $0.19B | −0.76 | $1.67B | yes |
+
+The chapter **stays first** once the gold is gone, and the result becomes
+cleaner rather than weaker. The warning flag disappears, the binding limit
+moves from Turkish supply to French demand, and RCA rises from 1.58 to 3.20.
+The opportunity is real, and it is in jewellery.
+
+One caution remains. Turkish *imports* of jewellery (HS 7113) rose from $2.4B in 2023
+to $6.6B in 2024. That jump coincides with the quota Turkey placed on gold
+imports in 2023, which suggests some of it is gold entering in another form.
+The net-export discount already reduces the chapter's supply accordingly.
+
+The 4-digit split is exact: in every flow and every year the headings add up
+to the 2-digit total.
 
 ---
 
@@ -135,7 +162,10 @@ preview API, which needs no subscription key.
 | France's imports from the world | M, partner 0 | `data/raw/france_imports_from_world.csv` |
 | Turkey's imports from the world | M, partner 0 | `data/raw/turkey_imports_from_world.csv` |
 
-Each file holds 97 HS chapters × 5 years. The totals match official statistics:
+The same four flows are also downloaded at 4-digit level for chapter 71 only,
+into `data/raw/chapter71_hs4.csv`.
+
+Each chapter file holds 97 HS chapters × 5 years. The totals match official statistics:
 Turkey's 2024 exports come to $261.8bn and its imports to $344.0bn.
 
 Two practical notes on the API, which cost some time to discover:
@@ -169,15 +199,16 @@ pip install -r requirements.txt
 
 ## Running the pipeline
 
-Run the three scripts in order from the `src/` directory. Each one writes its
+Run the scripts in order from the `src/` directory. Each one writes its
 output to `data/` and prints a readable summary.
 
 ```bash
 cd src
 
-python download_data.py       # 1. fetch the four datasets  (~2 minutes)
-python clean_data.py          # 2. build the analysis panel (instant)
-python opportunity_score.py   # 3. rank the products        (instant)
+python download_data.py       # 1. fetch the four datasets       (~2 minutes)
+python download_chapter71.py  #    and the chapter 71 breakdown  (~2 minutes)
+python clean_data.py          # 2. build the analysis panel      (instant)
+python opportunity_score.py   # 3. rank the products             (instant)
 ```
 
 The downloaded data is already committed, so steps 2 and 3 run without any
@@ -192,7 +223,7 @@ python opportunity_score.py --top 30        # print a longer ranking
 python opportunity_score.py --years 5       # average over five years, not three
 ```
 
-`download_data.py` is resumable. It only fetches years that are missing from the
+Both downloaders are resumable. It only fetches years that are missing from the
 CSV files, so an interrupted run can simply be repeated.
 
 ---
@@ -205,13 +236,15 @@ turkey-france-trade/
 ├── src/
 │   ├── config.py              All constants: paths, API settings, model parameters
 │   ├── download_data.py       Step 1 - download from UN Comtrade
+│   ├── download_chapter71.py  Step 1 - 4-digit breakdown of chapter 71
 │   ├── hs_chapters.py         English names for the 97 HS chapters
 │   ├── clean_data.py          Step 2 - merge, name and validate
 │   └── opportunity_score.py   Step 3 - ceilings, untapped value, ranking
 └── data/
-    ├── raw/                   One CSV per trade flow, as downloaded
+    ├── raw/                   One CSV per trade flow, plus chapter71_hs4.csv
     └── processed/
-        ├── trade_panel.csv         One row per chapter-year, 17 columns
+        ├── trade_panel.csv         One row per chapter-year, 18 columns
+        ├── chapter71_groups.csv    Chapter 71 by heading group and year
         └── opportunity_scores.csv  One row per chapter, ranked, 27 columns
 ```
 
@@ -238,13 +271,13 @@ pandas parses back as a missing value.
 - [x] **Step 3 — Opportunity score.** Two-sided ceiling model with a
       net-export supply-quality discount, producing a ranking and a dollar
       value per product.
+- [x] **Chapter 71 drill-down.** 4-digit download that separates jewellery
+      from gold bullion, so bullion no longer counts as an export opportunity.
 - [ ] **Step 4 — Forecasting.** Project French import demand and Turkish export
       capacity forward, so the ranking reflects where the opportunity is going
       rather than only where it is now.
 - [ ] **Step 5 — Streamlit dashboard.** Interactive exploration of the ranking,
       per-product detail, and the trade history behind each score.
-
-Also planned: the 4-digit drill-down on chapter 71 described above.
 
 ---
 

@@ -99,6 +99,51 @@ DATASETS = {
 }
 
 # --------------------------------------------------------------------------
+# Chapter 71 drill-down
+# --------------------------------------------------------------------------
+# At 2-digit level chapter 71 mixes two very different businesses: gold and
+# silver bullion, whose flows follow metal prices and investor demand, and
+# jewellery, which Turkiye genuinely manufactures. The same four flows are
+# therefore downloaded at 4-digit level for this chapter only, and the bullion
+# headings are taken out of the chapter before it is scored.
+DRILLDOWN_CHAPTER = "71"
+DRILLDOWN_FILENAME = "chapter71_hs4.csv"
+
+# Heading -> (short name, group). The groups are what the score and the
+# dashboard work with; the headings are kept for reference.
+CHAPTER71_HEADINGS: dict[str, tuple[str, str]] = {
+    "7101": ("Pearls", "stones"),
+    "7102": ("Diamonds", "stones"),
+    "7103": ("Precious and semi-precious stones", "stones"),
+    "7104": ("Synthetic stones", "stones"),
+    "7105": ("Stone dust and powder", "stones"),
+    "7106": ("Silver, unwrought or semi-manufactured", "bullion"),
+    "7107": ("Base metal clad with silver", "bullion"),
+    "7108": ("Gold, unwrought or semi-manufactured", "bullion"),
+    "7109": ("Base metal clad with gold", "bullion"),
+    "7110": ("Platinum, unwrought or semi-manufactured", "bullion"),
+    "7111": ("Base metal clad with platinum", "bullion"),
+    "7112": ("Precious metal waste and scrap", "bullion"),
+    "7113": ("Jewellery of precious metal", "jewellery"),
+    "7114": ("Goldsmiths' and silversmiths' wares", "jewellery"),
+    "7115": ("Other articles of precious metal", "jewellery"),
+    "7116": ("Articles of pearls and stones", "jewellery"),
+    "7117": ("Imitation jewellery", "jewellery"),
+    "7118": ("Coin", "bullion"),
+}
+
+CHAPTER71_GROUP_NAMES = {
+    "stones": "Pearls and precious stones",
+    "bullion": "Bullion, coin and scrap",
+    "jewellery": "Jewellery and articles",
+}
+
+# Groups removed from chapter 71 before scoring. Bullion is a store of value,
+# not a product an exporter competes on, so it cannot be an export
+# opportunity in the sense this project uses.
+CHAPTER71_EXCLUDED_GROUPS = {"bullion"}
+
+# --------------------------------------------------------------------------
 # Opportunity score
 # --------------------------------------------------------------------------
 # The opportunity of a chapter is the gap between what Turkiye could
